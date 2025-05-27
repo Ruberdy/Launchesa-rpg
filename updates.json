@@ -1,0 +1,57 @@
+{
+  "updates": [
+    {
+      "version": "1.0.0",
+      "date": "2024-01-15",
+      "filename": "game-v1.0.0.zip",
+      "description": "Primera versión estable del juego",
+      "features": [
+        "Sistema de combate completamente nuevo",
+        "Modo multijugador añadido",
+        "Nueva interfaz de usuario",
+        "Sistema de logros implementado"
+      ],
+      "fixes": [
+        "Corregido bug de audio",
+        "Mejorado rendimiento en mapas grandes",
+        "Solucionado problema de guardado"
+      ]
+    },
+    {
+      "version": "1.1.0",
+      "date": "2024-02-01",
+      "filename": "game-v1.1.0.zip",
+      "description": "Actualización de contenido y correcciones",
+      "features": [
+        "Nuevo mapa: Bosque Encantado",
+        "5 nuevas armas añadidas",
+        "Sistema de comercio mejorado",
+        "Chat por voz implementado"
+      ],
+      "fixes": [
+        "Corregidos crashes al cambiar de mapa",
+        "Balanceadas las estadísticas de personajes",
+        "Mejorada la sincronización multijugador"
+      ]
+    },
+    {
+      "version": "1.2.0",
+      "date": "2024-02-15",
+      "filename": "game-v1.2.0.zip",
+      "description": "Gran actualización con nuevo contenido",
+      "features": [
+        "Modo PvP por equipos",
+        "Sistema de gremios",
+        "10 nuevos enemigos",
+        "Crafteo avanzado de armas",
+        "Modo historia extendido"
+      ],
+      "fixes": [
+        "Optimizado el motor gráfico",
+        "Corregidos bugs de inventario",
+        "Mejorada la IA de enemigos",
+        "Solucionados problemas de conexión"
+      ]
+    }
+  ]
+}
