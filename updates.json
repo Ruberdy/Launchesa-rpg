@@ -17,5 +17,22 @@
         "Solucionado problema de guardado"
       ]
     }
+    {
+      "version": "2.0.0",
+      "date": "2024-01-15",
+      "filename": "Source.code.zip",
+      "description": "Primera versión estable del juego",
+      "features": [
+        "Sistema de combate completamente nuevo",
+        "Modo multijugador añadido",
+        "Nueva interfaz de usuario",
+        "Sistema de logros implementado"
+      ],
+      "fixes": [
+        "Corregido bug de audio",
+        "Mejorado rendimiento en mapas grandes",
+        "Solucionado problema de guardado"
+      ]
+    }
   ]
 }
