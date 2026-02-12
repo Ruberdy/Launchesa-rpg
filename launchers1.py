@@ -88,7 +88,7 @@ class ModernGameLauncher(QMainWindow):
         
         # Eliminar la barra de título nativa y hacer fondo translúcido
         self.setWindowFlags(Qt.FramelessWindowHint)
-        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WA_TranslucentBackground, False)
         
         # Variables de control
         self.available_updates = []
@@ -104,22 +104,26 @@ class ModernGameLauncher(QMainWindow):
         self.setWindowTitle("FosterGames RPG MAKER Launcher")
         self.setFixedSize(1200, 800)
         
-        if os.path.exists(LOGO_IMAGE_PATH):
+        if os.path.exists("icons/sword-shield.png"):
+            self.setWindowIcon(QIcon("icons/sword-shield.png"))
+        elif os.path.exists(LOGO_IMAGE_PATH):
             self.setWindowIcon(QIcon(LOGO_IMAGE_PATH))
         
         # Widget principal
         self.central_widget = QWidget()
+        self.central_widget.setObjectName("centralRoot")
         self.setCentralWidget(self.central_widget)
         
         # Layout principal
         self.main_layout = QVBoxLayout(self.central_widget)
-        self.main_layout.setContentsMargins(20, 20, 20, 20)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
         
         # Panel principal con diseño MMORPG
         self.main_panel = QWidget()
         self.main_panel.setObjectName("mainPanel")
         self.setup_styles()
+
         
         panel_layout = QVBoxLayout(self.main_panel)
         panel_layout.setContentsMargins(0, 0, 0, 0)
@@ -152,135 +156,201 @@ class ModernGameLauncher(QMainWindow):
         self.check_server_status()
 
     def setup_styles(self):
-        """Configurar estilos CSS"""
+        """Configurar estilo global oscuro (inspiración Black Desert Remastered)."""
         style = """
-        /* Panel principal */
+        /*
+            Paleta base (HEX):
+            - Fondo principal: #1F2630, #2B3442
+            - Paneles/widgets: #2E3746, #3A4556
+            - Texto: #F2F2F2, #B8C1CC
+            - Botones: #5C6778 (normal), #6D7A8E (hover)
+            - Detalle metálico dorado (opcional): #C8A45C
+        */
+
+        QWidget {
+            color: #F2F2F2;
+            font-family: 'Segoe UI';
+        }
+
         #mainPanel {
             background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                stop:0 #0f172a, stop:0.5 #1e293b, stop:1 #0f172a);
-            border-radius: 15px;
-            border: 3px solid qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 #fbbf24, stop:0.5 #3b82f6, stop:1 #8b5cf6);
+                stop:0 #1F2630, stop:0.45 #2B3442, stop:1 #1F2630);
+            border-radius: 0px;
+            border: 1px solid #4A576B;
         }
 
-        /* Barra de título */
         #titleBar {
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 #3b82f6, stop:0.5 #8b5cf6, stop:1 #3b82f6);
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
-            color: white;
-            border-bottom: 2px solid #fbbf24;
-        }
-        #titleBar:hover {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 #4f90f7, stop:0.5 #9a6cf7, stop:1 #4f90f7);
+                stop:0 #2E3746, stop:0.5 #3A4556, stop:1 #2E3746);
+            border-top-left-radius: 0px;
+            border-top-right-radius: 0px;
+            color: #F2F2F2;
+            border-bottom: 1px solid #C8A45C;
         }
 
-        /* Botón de juego principal */
-        #playButton {
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                stop:0 #fbbf24, stop:1 #d97706);
-            color: #1e293b;
-            border: 2px solid #fbbf24;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            padding: 15px;
-            margin: 10px;
+        #titleBar QWidget,
+        #titleBar QLabel {
+            background-color: transparent;
+            background: transparent;
+            border: none;
         }
 
-        #playButton:hover {
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                stop:0 #fcd34d, stop:1 #f59e0b);
+        #logoLabel {
+            min-width: 32px;
+            max-width: 32px;
+            min-height: 32px;
+            max-height: 32px;
+            background-color: transparent;
+            background: transparent;
+            border: none;
+            image: none;
         }
 
-        #playButton:pressed {
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                stop:0 #d97706, stop:1 #b45309);
-        }
-
-        #playButton:disabled {
-            background: #4b5563;
-            color: #9ca3af;
-            border: 2px solid #6b7280;
-        }
-
-        /* Botones de acción */
-        #actionButton {
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                stop:0 #3b82f6, stop:1 #2563eb);
-            color: white;
-            border: 1px solid #3b82f6;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: bold;
+        #contentPanel {
+            background-color: #263140;
+            border: 1px solid #3A4556;
+            border-radius: 12px;
             padding: 10px;
         }
 
-        #actionButton:hover {
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                stop:0 #60a5fa, stop:1 #3b82f6);
-        }
-
-        #actionButton:disabled {
-            background: #4b5563;
-            border: 1px solid #6b7280;
-        }
-
-        /* Barra de progreso */
-        #progressBar {
-            border: 2px solid #3b82f6;
+        #topInfoBar {
+            background: #222c3a;
+            border: 1px solid #3A4556;
             border-radius: 8px;
-            text-align: center;
-            color: white;
-            background: #1e293b;
-            height: 20px;
         }
 
-        #progressBar::chunk {
+        #heroCard {
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 #10b981, stop:0.5 #3b82f6, stop:1 #8b5cf6);
-            border-radius: 6px;
+                stop:0 #2B3442, stop:1 #323D4D);
+            border: 1px solid #46556B;
+            border-radius: 10px;
         }
 
-        /* Etiqueta de estado */
-        #statusLabel {
-            color: #93c5fd;
-            font-size: 12px;
-            padding: 8px;
-            background: #1e293b;
-            border-radius: 6px;
-            border: 1px solid #3b82f6;
+        #heroTitle {
+            color: #C8A45C;
+            font-size: 34px;
+            font-weight: 700;
         }
 
-        /* Grupos */
+        #heroSub {
+            color: #B8C1CC;
+            font-size: 14px;
+        }
+
+        #rightRail {
+            background: transparent;
+        }
+
         QGroupBox {
-            color: #fbbf24;
+            color: #F2F2F2;
             font-size: 14px;
             font-weight: bold;
-            border: 2px solid #3b82f6;
+            border: 1px solid #3A4556;
             border-radius: 8px;
             margin-top: 10px;
             padding-top: 10px;
-            background: #1e293b;
+            background: #2E3746;
         }
 
         QGroupBox::title {
             subcontrol-origin: margin;
             left: 10px;
-            padding: 0 5px 0 5px;
-            background: #0f172a;
+            padding: 0 6px;
+            background: #2B3442;
+            color: #B8C1CC;
         }
 
-        /* Text Browser */
-        QTextBrowser {
-            background: #1e293b;
-            border: 1px solid #3b82f6;
+        QLabel {
+            color: #F2F2F2;
+        }
+
+        #playButton {
+            background-color: #5C6778;
+            color: #F2F2F2;
+            border: 1px solid #6D7A8E;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 15px 12px;
+            min-height: 56px;
+        }
+        #playButton:hover {
+            background-color: #6D7A8E;
+            border: 1px solid #C8A45C;
+        }
+        #playButton:pressed {
+            background-color: #4F5968;
+        }
+        #playButton:disabled {
+            background: #3A4556;
+            color: #7E8999;
+            border: 1px solid #485466;
+        }
+
+        #actionButton {
+            background-color: #3A4556;
+            color: #F2F2F2;
+            border: 1px solid #5C6778;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 10px;
+        }
+        #actionButton:hover {
+            background-color: #5C6778;
+            border: 1px solid #6D7A8E;
+        }
+        #actionButton:disabled {
+            background: #2E3746;
+            color: #7E8999;
+            border: 1px solid #485466;
+        }
+
+        QProgressBar, #progressBar {
+            border: 1px solid #5C6778;
+            border-radius: 8px;
+            text-align: center;
+            color: #F2F2F2;
+            background: #2B3442;
+            height: 20px;
+        }
+        QProgressBar::chunk, #progressBar::chunk {
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                stop:0 #5C6778, stop:1 #6D7A8E);
             border-radius: 6px;
-            color: #e2e8f0;
+        }
+
+        #statusLabel {
+            color: #F2F2F2;
             font-size: 12px;
             padding: 8px;
+            background: #2E3746;
+            border-radius: 6px;
+            border: 1px solid #3A4556;
+        }
+
+        QTextBrowser {
+            background: #2B3442;
+            border: 1px solid #3A4556;
+            border-radius: 6px;
+            color: #B8C1CC;
+            font-size: 12px;
+            padding: 8px;
+        }
+
+        #newsDisplay {
+            background: #2D3748;
+            border: 1px solid #46556B;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        QLineEdit, QComboBox, QListWidget {
+            background-color: #2E3746;
+            border: 1px solid #3A4556;
+            border-radius: 6px;
+            color: #F2F2F2;
+            padding: 6px;
         }
         """
         self.main_panel.setStyleSheet(style)
@@ -303,15 +373,17 @@ class ModernGameLauncher(QMainWindow):
         logo_layout.setContentsMargins(0, 0, 0, 0)
         
         self.logo_label = QLabel()
-        if os.path.exists(LOGO_IMAGE_PATH):
-            pixmap = QPixmap(LOGO_IMAGE_PATH).scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            self.logo_label.setPixmap(pixmap)
+        self.logo_label.setObjectName("logoLabel")
+        logo_path = "icons/sword-shield.png" if os.path.exists("icons/sword-shield.png") else ""
+        pixmap = QPixmap(logo_path) if logo_path else QPixmap()
+        if not pixmap.isNull():
+            self.logo_label.setPixmap(pixmap.scaled(28, 28, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         else:
             self.logo_label.setText("⚔️")
-            self.logo_label.setStyleSheet("font-size: 20px; color: white;")
+            self.logo_label.setStyleSheet("font-size: 20px; color: #F2F2F2;")
         
         title_label = QLabel("FOSTER GAMES RPG MAKER MZ")
-        title_label.setStyleSheet("color: white; font-size: 14px; font-weight: bold;")
+        title_label.setStyleSheet("color: #F2F2F2; font-size: 14px; font-weight: bold;")
         
         logo_layout.addWidget(self.logo_label)
         logo_layout.addWidget(title_label)
@@ -319,7 +391,7 @@ class ModernGameLauncher(QMainWindow):
         
         # Estado de conexión
         self.connection_status = QLabel("● Conectado")
-        self.connection_status.setStyleSheet("color: #10b981; font-weight: bold; font-size: 12px;")
+        self.connection_status.setStyleSheet("color: #B8C1CC; font-weight: bold; font-size: 12px;")
         
         # Botones de control de ventana
         control_widget = QWidget()
@@ -337,7 +409,7 @@ class ModernGameLauncher(QMainWindow):
                 border-radius: 5px;
                 font-weight: bold;
             }
-            QPushButton:hover { background: rgba(59,130,246,0.6); }
+            QPushButton:hover { background: #5C6778; }
         """)
         min_btn.clicked.connect(self.showMinimized)
         
@@ -351,7 +423,7 @@ class ModernGameLauncher(QMainWindow):
                 border-radius: 5px;
                 font-weight: bold;
             }
-            QPushButton:hover { background: rgba(239,68,68,0.6); }
+            QPushButton:hover { background: #6D7A8E; }
         """)
         close_btn.clicked.connect(self.close)
         
@@ -380,48 +452,64 @@ class ModernGameLauncher(QMainWindow):
             event.accept()
 
     def setup_main_page(self):
-        """Página principal del launcher"""
+        """Página principal del launcher con estructura inspirada en Black Desert."""
         self.main_page = QWidget()
         layout = QVBoxLayout(self.main_page)
-        layout.setContentsMargins(20, 20, 20, 20)
-        
-        # Header principal
-        header_label = QLabel("🏰 RPG MAKER GAME LAUNCHER 🏰")
-        header_label.setStyleSheet("""
-            QLabel {
-                color: #fbbf24;
-                font-size: 32px;
-                font-weight: bold;
-                text-align: center;
-                margin: 10px;
-            }
-        """)
-        header_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(header_label)
-        
-        sub_label = QLabel("Embárcate en una aventura épica - Tu leyenda comienza aquí")
-        sub_label.setStyleSheet("color: #93c5fd; font-size: 14px; text-align: center;")
-        sub_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(sub_label)
-        
-        # Contenido principal
-        content_layout = QHBoxLayout()
-        content_layout.setSpacing(20)
-        
-        # Panel izquierdo - Estado y noticias
+        layout.setContentsMargins(24, 16, 24, 18)
+        layout.setSpacing(12)
+
+        # Barra superior informativa (similar a launcher de referencia)
+        top_bar = QWidget()
+        top_bar.setObjectName("topInfoBar")
+        top_layout = QHBoxLayout(top_bar)
+        top_layout.setContentsMargins(14, 6, 14, 6)
+
+        links = QLabel("Página oficial   |   Noticias   |   Soporte   |   Centro de Seguridad")
+        links.setStyleSheet("color: #B8C1CC; font-size: 11px;")
+        version_tag = QLabel("VER 1.29.3")
+        version_tag.setStyleSheet("color: #B8C1CC; font-size: 11px; font-weight: bold;")
+        top_layout.addWidget(links)
+        top_layout.addStretch()
+        top_layout.addWidget(version_tag)
+        layout.addWidget(top_bar)
+
+        # Hero principal
+        hero = QFrame()
+        hero.setObjectName("heroCard")
+        hero_layout = QVBoxLayout(hero)
+        hero_layout.setContentsMargins(22, 18, 22, 18)
+
+        hero_title = QLabel("🏰 RPG MAKER GAME LAUNCHER")
+        hero_title.setObjectName("heroTitle")
+        hero_sub = QLabel("Embárcate en una aventura épica · Tu leyenda comienza aquí")
+        hero_sub.setObjectName("heroSub")
+        hero_layout.addWidget(hero_title)
+        hero_layout.addWidget(hero_sub)
+
+        layout.addWidget(hero)
+
+        # Contenido principal estructurado en dos columnas
+        content_panel = QWidget()
+        content_panel.setObjectName("contentPanel")
+        content_layout = QHBoxLayout(content_panel)
+        content_layout.setContentsMargins(12, 12, 12, 12)
+        content_layout.setSpacing(16)
+
+        # Columna izquierda: estado y crónicas
         left_panel = self.create_status_panel()
         content_layout.addWidget(left_panel, 2)
-        
-        # Panel derecho - Control del juego
+
+        # Columna derecha: controles de juego
         right_panel = self.create_game_control_panel()
+        right_panel.setObjectName("rightRail")
         content_layout.addWidget(right_panel, 1)
-        
-        layout.addLayout(content_layout)
-        
+
+        layout.addWidget(content_panel)
+
         # Footer con estadísticas
         footer = self.create_footer()
         layout.addWidget(footer)
-        
+
         self.content_stack.addWidget(self.main_page)
 
     def create_status_panel(self):
@@ -453,7 +541,7 @@ class ModernGameLauncher(QMainWindow):
             stat_layout_inner.setAlignment(Qt.AlignCenter)
             
             title_label = QLabel(title)
-            title_label.setStyleSheet(f"color: #93c5fd; font-size: 11px; text-align: center;")
+            title_label.setStyleSheet(f"color: #B8C1CC; font-size: 11px; text-align: center;")
             
             value_label = QLabel(value)
             value_label.setStyleSheet(f"color: {color}; font-size: 16px; font-weight: bold; text-align: center;")
@@ -471,8 +559,9 @@ class ModernGameLauncher(QMainWindow):
         news_group = QGroupBox("📰 ÚLTIMAS CRÓNICAS")
         news_layout = QVBoxLayout(news_group)
         self.news_display = QTextBrowser()
+        self.news_display.setObjectName("newsDisplay")
         self.news_display.setHtml("""
-            <div style='color: #93c5fd; text-align: center;'>
+            <div style='color: #B8C1CC; text-align: center;'>
                 <h3>Bienvenido Aventurero</h3>
                 <p>Las noticias se cargarán pronto...</p>
             </div>
@@ -493,11 +582,11 @@ class ModernGameLauncher(QMainWindow):
         version_layout = QVBoxLayout(version_group)
         
         self.version_label = QLabel("Cargando...")
-        self.version_label.setStyleSheet("color: #fbbf24; font-size: 24px; font-weight: bold; text-align: center;")
+        self.version_label.setStyleSheet("color: #C8A45C; font-size: 24px; font-weight: bold; text-align: center;")
         self.version_label.setAlignment(Qt.AlignCenter)
         
         self.realm_label = QLabel("Realm of Eternal Legends")
-        self.realm_label.setStyleSheet("color: #60a5fa; font-size: 12px; text-align: center;")
+        self.realm_label.setStyleSheet("color: #B8C1CC; font-size: 12px; text-align: center;")
         self.realm_label.setAlignment(Qt.AlignCenter)
         
         version_layout.addWidget(self.version_label)
@@ -507,7 +596,9 @@ class ModernGameLauncher(QMainWindow):
         # Botón de juego principal
         self.play_button = QPushButton("🎮 INICIAR AVENTURA")
         self.play_button.setObjectName("playButton")
-        self.play_button.setMinimumHeight(50)
+        self.play_button.setFixedHeight(58)
+        self.play_button.setMinimumWidth(300)
+        self.play_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.play_button.clicked.connect(self.launch_game)
         self.play_button.setEnabled(False)
         layout.addWidget(self.play_button)
@@ -553,7 +644,7 @@ class ModernGameLauncher(QMainWindow):
         
         # Etiqueta de detalles
         self.details_label = QLabel("")
-        self.details_label.setStyleSheet("color: #93c5fd; font-size: 11px; padding: 5px;")
+        self.details_label.setStyleSheet("color: #B8C1CC; font-size: 11px; padding: 5px;")
         self.details_label.setAlignment(Qt.AlignCenter)
         self.details_label.setWordWrap(True)
         layout.addWidget(self.details_label)
@@ -564,13 +655,13 @@ class ModernGameLauncher(QMainWindow):
         """Footer con estadísticas y enlaces"""
         footer = QWidget()
         footer.setFixedHeight(50)
-        footer.setStyleSheet("background: #1e293b; border-radius: 8px; border: 1px solid #3b82f6;")
+        footer.setStyleSheet("background: #2B3442; border-radius: 10px; border: 1px solid #46556B;")
         
         layout = QHBoxLayout(footer)
         
         # Estadísticas
         stats_label = QLabel("👥 1.2M Aventureros • 🏰 45K Clanes • ⚔️ 8.7M Batallas")
-        stats_label.setStyleSheet("color: #93c5fd; font-size: 11px;")
+        stats_label.setStyleSheet("color: #B8C1CC; font-size: 11px;")
         layout.addWidget(stats_label)
         
         layout.addStretch()
@@ -578,9 +669,9 @@ class ModernGameLauncher(QMainWindow):
         # Enlaces sociales
         social_layout = QHBoxLayout()
         social_buttons = [
-            ("Discord", DISCORD_URL, "#5865F2"),
-            ("Foro", "#", "#fbbf24"),
-            ("Soporte", "#", "#10b981")
+            ("Discord", DISCORD_URL, "#3A4556"),
+            ("Foro", "#", "#5C6778"),
+            ("Soporte", "#", "#C8A45C")
         ]
         
         for text, url, color in social_buttons:
@@ -608,14 +699,14 @@ class ModernGameLauncher(QMainWindow):
     def setup_news_page(self):
         """Página de noticias"""
         try:
-            self.news_panel = RPGNewsPanel()
+            self.news_panel = RPGNewsPanel(self)
             self.content_stack.addWidget(self.news_panel)
         except:
             # Fallback si no se puede cargar el panel de noticias
             fallback_widget = QWidget()
             layout = QVBoxLayout(fallback_widget)
             label = QLabel("Panel de Noticias - No disponible temporalmente")
-            label.setStyleSheet("color: white; font-size: 16px; text-align: center;")
+            label.setStyleSheet("color: #F2F2F2; font-size: 16px; text-align: center;")
             layout.addWidget(label)
             
             back_btn = QPushButton("Volver al Inicio")
@@ -635,7 +726,7 @@ class ModernGameLauncher(QMainWindow):
             fallback_widget = QWidget()
             layout = QVBoxLayout(fallback_widget)
             label = QLabel("Panel de Misiones - No disponible temporalmente")
-            label.setStyleSheet("color: white; font-size: 16px; text-align: center;")
+            label.setStyleSheet("color: #F2F2F2; font-size: 16px; text-align: center;")
             layout.addWidget(label)
             
             back_btn = QPushButton("Volver al Inicio")
@@ -651,7 +742,7 @@ class ModernGameLauncher(QMainWindow):
         layout = QVBoxLayout(settings_page)
         
         settings_label = QLabel("Configuración del Juego")
-        settings_label.setStyleSheet("color: #fbbf24; font-size: 24px; text-align: center;")
+        settings_label.setStyleSheet("color: #C8A45C; font-size: 24px; text-align: center;")
         settings_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(settings_label)
         
@@ -808,6 +899,7 @@ class ModernGameLauncher(QMainWindow):
             latest_update = updates[-1] if updates else updates[0]
             self._update_status(f"¡{len(updates)} actualizaciones disponibles!")
             self.details_label.setText(f"Última versión: v{latest_update}")
+            self.play_button.setVisible(True)
             self.play_button.setText("🔄 INSTALAR ACTUALIZACIONES")
             self.play_button.setEnabled(True)
             self.play_button.clicked.disconnect()
@@ -815,6 +907,7 @@ class ModernGameLauncher(QMainWindow):
         else:
             self._update_status("¡Tu juego está actualizado!")
             self.details_label.setText("Tienes la última versión disponible")
+            self.play_button.setVisible(True)
             self.play_button.setText("🎮 INICIAR AVENTURA")
             self.play_button.setEnabled(True)
             self.play_button.clicked.disconnect()
@@ -826,6 +919,7 @@ class ModernGameLauncher(QMainWindow):
             self._show_error("No hay actualizaciones disponibles para descargar")
             return
             
+        self.play_button.setVisible(False)
         self.play_button.setEnabled(False)
         self.update_button.setEnabled(False)
         self.progress_bar.setVisible(True)
@@ -955,11 +1049,13 @@ class ModernGameLauncher(QMainWindow):
     def _handle_install_complete(self):
         """Manejar instalación completada"""
         self.progress_bar.setVisible(False)
+        self.play_button.setVisible(True)
         self.update_button.setEnabled(True)
         self._update_status("¡Todas las actualizaciones instaladas!")
         self.version_label.setText(f"v{self.current_version}")
         self.details_label.setText("")
         
+        self.play_button.setVisible(True)
         self.play_button.setText("🎮 INICIAR AVENTURA")
         self.play_button.setEnabled(True)
         self.play_button.clicked.disconnect()
@@ -1070,7 +1166,7 @@ class ModernGameLauncher(QMainWindow):
                 # Formatear como HTML
                 news_html = f"""
                 <div style='color: #e2e8f0; font-family: Arial;'>
-                    <h3 style='color: #fbbf24; text-align: center;'>Últimas Noticias</h3>
+                    <h3 style='color: #C8A45C; text-align: center;'>Últimas Noticias</h3>
                     <div style='padding: 10px; line-height: 1.5;'>
                         {news_text.replace(chr(10), '<br>')}
                     </div>
@@ -1081,7 +1177,7 @@ class ModernGameLauncher(QMainWindow):
                 # Noticias por defecto en caso de error
                 default_news = """
                 <div style='color: #e2e8f0; font-family: Arial;'>
-                    <h3 style='color: #fbbf24; text-align: center;'>¡Bienvenido Aventurero!</h3>
+                    <h3 style='color: #C8A45C; text-align: center;'>¡Bienvenido Aventurero!</h3>
                     <p style='text-align: center;'>Explora mundos fantásticos y enfréntate a desafíos épicos</p>
                     <p style='text-align: center; margin-top: 15px;'>
                         <strong>Novedades:</strong><br>
@@ -1149,6 +1245,10 @@ class ModernGameLauncher(QMainWindow):
     def _show_error(self, error_msg):
         self.status_label.setText("Error")
         self.details_label.setText(error_msg)
+        self.progress_bar.setVisible(False)
+        self.play_button.setVisible(True)
+        self.play_button.setEnabled(True)
+        self.update_button.setEnabled(True)
         QMessageBox.critical(self, "Error", error_msg)
 
     def _update_news(self, news_text):
@@ -1160,10 +1260,10 @@ class ModernGameLauncher(QMainWindow):
     def _update_connection_display(self, connected):
         if connected:
             self.connection_status.setText("● Conectado")
-            self.connection_status.setStyleSheet("color: #10b981; font-weight: bold; font-size: 12px;")
+            self.connection_status.setStyleSheet("color: #B8C1CC; font-weight: bold; font-size: 12px;")
         else:
             self.connection_status.setText("● Sin conexión")
-            self.connection_status.setStyleSheet("color: #ef4444; font-weight: bold; font-size: 12px;")
+            self.connection_status.setStyleSheet("color: #C8A45C; font-weight: bold; font-size: 12px;")
 
     def _update_game_install_progress(self, percent, speed, details):
         self.progress_bar.setValue(percent)
@@ -1216,12 +1316,33 @@ class ModernGameLauncher(QMainWindow):
         if url and url != "#":
             QDesktopServices.openUrl(QUrl(url))
 
+
+def build_global_qss():
+    """QSS global base para la ventana principal y widgets generales."""
+    return """
+    /* Fondo principal azul grisáceo oscuro */
+    #centralRoot {
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+            stop:0 #1B2330, stop:0.5 #202A38, stop:1 #1A2230);
+    }
+
+    /* Borde fino para menús/paneles sueltos */
+    QMenu {
+        background-color: #2B3442;
+        color: #F2F2F2;
+        border: 1px solid #46556B;
+    }
+    """
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     # Establecer estilo fusion
     app.setStyle("Fusion")
     
+    # Aplicar estilo global (QSS) basado en paleta oscura moderna
+    app.setStyleSheet(build_global_qss())
+
     # Configurar fuente
     font = QFont("Segoe UI", 10)
     app.setFont(font)
