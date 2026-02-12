@@ -36,7 +36,7 @@ def read_config():
             "GAME_EXECUTABLE": "game.exe",
             "BACKGROUND_IMAGE_PATH": "background.jpg",
             "GAME_INSTALLER_URL": "https://example.com/game_installer.zip",
-            "LOGO_IMAGE_PATH": "logo.png"
+            "LOGO_IMAGE_PATH": "assets/logo.png"
         }
     return config
 
@@ -83,6 +83,7 @@ class NewsCard(QWidget):
         super().__init__(parent)
         self.news_data = news_data
         self.index = index
+        self.news_window = None
         self.init_ui()
 
     def init_ui(self):
@@ -141,9 +142,12 @@ class NewsCard(QWidget):
         """)
 
     def open_news_detail(self):
-        news_window = RPGNewsPanel()
-        news_window.show_news_detail(self.news_data)
-        news_window.show()
+        if self.news_window is None:
+            self.news_window = RPGNewsPanel()
+        self.news_window.show_news_detail(self.news_data)
+        self.news_window.show()
+        self.news_window.raise_()
+        self.news_window.activateWindow()
 
 class ModernGameLauncher(QMainWindow):
     def __init__(self):
@@ -880,4 +884,5 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     launcher = ModernGameLauncher()
     launcher.show()
+
     sys.exit(app.exec_())
