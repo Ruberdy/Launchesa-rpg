@@ -109,6 +109,7 @@ class ModernGameLauncher(QMainWindow):
         
         # Widget principal
         self.central_widget = QWidget()
+        self.central_widget.setObjectName("centralRoot")
         self.setCentralWidget(self.central_widget)
         
         # Layout principal
@@ -120,6 +121,13 @@ class ModernGameLauncher(QMainWindow):
         self.main_panel = QWidget()
         self.main_panel.setObjectName("mainPanel")
         self.setup_styles()
+
+        # Sombra suave para mejorar el contorno/borde visual de la ventana
+        panel_shadow = QGraphicsDropShadowEffect(self.main_panel)
+        panel_shadow.setBlurRadius(32)
+        panel_shadow.setOffset(0, 6)
+        panel_shadow.setColor(QColor(8, 12, 20, 170))
+        self.main_panel.setGraphicsEffect(panel_shadow)
         
         panel_layout = QVBoxLayout(self.main_panel)
         panel_layout.setContentsMargins(0, 0, 0, 0)
@@ -164,7 +172,6 @@ class ModernGameLauncher(QMainWindow):
         */
 
         QWidget {
-            background-color: #1F2630;
             color: #F2F2F2;
             font-family: 'Segoe UI';
         }
@@ -172,17 +179,39 @@ class ModernGameLauncher(QMainWindow):
         #mainPanel {
             background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                 stop:0 #1F2630, stop:0.45 #2B3442, stop:1 #1F2630);
-            border-radius: 15px;
-            border: 2px solid #3A4556;
+            border-radius: 18px;
+            border: 1px solid #4A576B;
         }
 
         #titleBar {
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                 stop:0 #2E3746, stop:0.5 #3A4556, stop:1 #2E3746);
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
             color: #F2F2F2;
             border-bottom: 1px solid #C8A45C;
+        }
+
+        #titleBar QWidget,
+        #titleBar QLabel {
+            background: transparent;
+            border: none;
+        }
+
+        #logoLabel {
+            min-width: 32px;
+            max-width: 32px;
+            min-height: 32px;
+            max-height: 32px;
+            background: transparent;
+            border: none;
+        }
+
+        #contentPanel {
+            background-color: #263140;
+            border: 1px solid #3A4556;
+            border-radius: 12px;
+            padding: 10px;
         }
 
         QGroupBox {
@@ -282,6 +311,13 @@ class ModernGameLauncher(QMainWindow):
             padding: 8px;
         }
 
+        #newsDisplay {
+            background: #2D3748;
+            border: 1px solid #46556B;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
         QLineEdit, QComboBox, QListWidget {
             background-color: #2E3746;
             border: 1px solid #3A4556;
@@ -310,12 +346,13 @@ class ModernGameLauncher(QMainWindow):
         logo_layout.setContentsMargins(0, 0, 0, 0)
         
         self.logo_label = QLabel()
+        self.logo_label.setObjectName("logoLabel")
         if os.path.exists(LOGO_IMAGE_PATH):
             pixmap = QPixmap(LOGO_IMAGE_PATH).scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.logo_label.setPixmap(pixmap)
         else:
             self.logo_label.setText("⚔️")
-            self.logo_label.setStyleSheet("font-size: 20px; color: white;")
+            self.logo_label.setStyleSheet("font-size: 20px; color: #F2F2F2;")
         
         title_label = QLabel("FOSTER GAMES RPG MAKER MZ")
         title_label.setStyleSheet("color: #F2F2F2; font-size: 14px; font-weight: bold;")
@@ -390,7 +427,7 @@ class ModernGameLauncher(QMainWindow):
         """Página principal del launcher"""
         self.main_page = QWidget()
         layout = QVBoxLayout(self.main_page)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(24, 18, 24, 20)
         
         # Header principal
         header_label = QLabel("🏰 RPG MAKER GAME LAUNCHER 🏰")
@@ -411,19 +448,22 @@ class ModernGameLauncher(QMainWindow):
         sub_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(sub_label)
         
-        # Contenido principal
-        content_layout = QHBoxLayout()
-        content_layout.setSpacing(20)
-        
+        # Contenido principal estructurado en dos columnas
+        content_panel = QWidget()
+        content_panel.setObjectName("contentPanel")
+        content_layout = QHBoxLayout(content_panel)
+        content_layout.setContentsMargins(10, 10, 10, 10)
+        content_layout.setSpacing(18)
+
         # Panel izquierdo - Estado y noticias
         left_panel = self.create_status_panel()
         content_layout.addWidget(left_panel, 2)
-        
+
         # Panel derecho - Control del juego
         right_panel = self.create_game_control_panel()
         content_layout.addWidget(right_panel, 1)
-        
-        layout.addLayout(content_layout)
+
+        layout.addWidget(content_panel)
         
         # Footer con estadísticas
         footer = self.create_footer()
@@ -478,8 +518,9 @@ class ModernGameLauncher(QMainWindow):
         news_group = QGroupBox("📰 ÚLTIMAS CRÓNICAS")
         news_layout = QVBoxLayout(news_group)
         self.news_display = QTextBrowser()
+        self.news_display.setObjectName("newsDisplay")
         self.news_display.setHtml("""
-            <div style='color: #93c5fd; text-align: center;'>
+            <div style='color: #B8C1CC; text-align: center;'>
                 <h3>Bienvenido Aventurero</h3>
                 <p>Las noticias se cargarán pronto...</p>
             </div>
@@ -571,7 +612,7 @@ class ModernGameLauncher(QMainWindow):
         """Footer con estadísticas y enlaces"""
         footer = QWidget()
         footer.setFixedHeight(50)
-        footer.setStyleSheet("background: #2B3442; border-radius: 8px; border: 1px solid #3A4556;")
+        footer.setStyleSheet("background: #2B3442; border-radius: 10px; border: 1px solid #46556B;")
         
         layout = QHBoxLayout(footer)
         
@@ -1225,32 +1266,19 @@ class ModernGameLauncher(QMainWindow):
 
 
 def build_global_qss():
-    """QSS global para aplicar una estética oscura moderna en toda la app."""
+    """QSS global base para la ventana principal y widgets generales."""
     return """
     /* Fondo principal azul grisáceo oscuro */
-    QWidget { background-color: #1F2630; color: #F2F2F2; }
+    #centralRoot {
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+            stop:0 #1B2330, stop:0.5 #202A38, stop:1 #1A2230);
+    }
 
-    /* Paneles y widgets secundarios */
-    QFrame, QStackedWidget, QMenu {
+    /* Borde fino para menús/paneles sueltos */
+    QMenu {
         background-color: #2B3442;
         color: #F2F2F2;
-    }
-
-    /* Botones con tonos gris/azul + hover */
-    QPushButton {
-        background-color: #5C6778;
-        color: #F2F2F2;
-        border: 1px solid #6D7A8E;
-        border-radius: 6px;
-        padding: 6px 10px;
-    }
-    QPushButton:hover {
-        background-color: #6D7A8E;
-        border: 1px solid #C8A45C; /* detalle metálico dorado opcional */
-    }
-
-    QLabel {
-        color: #B8C1CC;
+        border: 1px solid #46556B;
     }
     """
 
