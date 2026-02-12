@@ -11,15 +11,11 @@ from io import BytesIO
 from quest import QuestPanel
 
 class RPGNewsPanel(QMainWindow):
-    def __init__(self):
+    def __init__(self, launcher=None):
         super().__init__()
+        self.launcher = launcher
         self.setWindowTitle("Crónicas del Reino - RPG Legends")
-        self.setStyleSheet("""
-            QMainWindow {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ffffff, stop:1 #e2e8f0);
-            }
-        """)
+        self.apply_theme()
         
         # Variables
         self.all_news = []
@@ -58,6 +54,88 @@ class RPGNewsPanel(QMainWindow):
         self.events_timer = QTimer()
         self.events_timer.timeout.connect(self.load_events_from_url)
         self.events_timer.start(60000)
+
+    def apply_theme(self):
+        """Aplicar la misma paleta oscura usada por launchers1.py."""
+        self.setStyleSheet("""
+            QMainWindow, QWidget {
+                background-color: #1F2630;
+                color: #F2F2F2;
+                font-family: 'Segoe UI';
+            }
+            #newsSidebar {
+                background: #2B3442;
+                border-right: 1px solid #3A4556;
+            }
+            #mainContent {
+                background: #1F2630;
+            }
+            #newsHeaderCard {
+                background: #2E3746;
+                border: 1px solid #3A4556;
+                border-radius: 10px;
+            }
+            #newsTitle {
+                color: #C8A45C;
+                font-size: 24px;
+                font-weight: 700;
+            }
+            QLineEdit, QComboBox, QListWidget {
+                background-color: #2E3746;
+                border: 1px solid #3A4556;
+                border-radius: 8px;
+                color: #F2F2F2;
+                padding: 6px;
+            }
+            QComboBox QAbstractItemView {
+                background: #2E3746;
+                selection-background-color: #5C6778;
+                color: #F2F2F2;
+            }
+            QScrollArea {
+                background: transparent;
+                border: none;
+            }
+            QPushButton#sidebarButton {
+                background: #2E3746;
+                border: 1px solid #3A4556;
+                border-radius: 10px;
+                color: #F2F2F2;
+                font-size: 12px;
+                font-weight: 600;
+                text-align: left;
+                padding: 10px;
+            }
+            QPushButton#sidebarButton:hover {
+                background: #5C6778;
+                border: 1px solid #6D7A8E;
+            }
+            QPushButton#sidebarButton:checked {
+                background: #5C6778;
+                border: 1px solid #C8A45C;
+            }
+            QPushButton#backToLauncherButton {
+                background: #3A4556;
+                border: 1px solid #C8A45C;
+                border-radius: 10px;
+                color: #F2F2F2;
+                font-weight: 700;
+                padding: 10px;
+            }
+            QPushButton#backToLauncherButton:hover {
+                background: #5C6778;
+            }
+            #eventCard, #newsCard {
+                background: #2E3746;
+                border: 1px solid #3A4556;
+                border-radius: 10px;
+            }
+            #newsDetailContainer {
+                background: #2B3442;
+                border: 1px solid #3A4556;
+                border-radius: 12px;
+            }
+        """)
     
     def create_news_list_view(self):
         """Crear vista de lista de noticias"""
@@ -80,35 +158,12 @@ class RPGNewsPanel(QMainWindow):
         
         self.news_index = QListWidget()
         self.news_index.setMaximumWidth(200)
-        self.news_index.setStyleSheet("""
-            QListWidget {
-                background: #ffffff;
-                border: none;
-                border-radius: 10px;
-                padding: 5px;
-                font-family: 'Segoe UI', sans-serif;
-                font-size: 13px;
-                color: #1e3a8a;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            }
-            QListWidget::item {
-                padding: 8px;
-                border: none;
-            }
-            QListWidget::item:selected {
-                background: #3b82f6;
-                color: #ffffff;
-                border-radius: 6px;
-            }
-            QListWidget::item:hover {
-                background: #f1f5f9;
-                border-radius: 6px;
-            }
-        """)
+        self.news_index.setStyleSheet("QListWidget{background:#2E3746;border:1px solid #3A4556;border-radius:10px;color:#F2F2F2;} QListWidget::item{padding:8px;} QListWidget::item:selected{background:#5C6778;border-radius:6px;} QListWidget::item:hover{background:#3A4556;border-radius:6px;}")
         self.news_index.itemClicked.connect(self.on_index_item_clicked)
         detail_main_layout.addWidget(self.news_index)
         
         detail_content = QWidget()
+        detail_content.setObjectName("newsDetailContainer")
         self.detail_layout = QVBoxLayout(detail_content)
         self.detail_layout.setContentsMargins(0, 0, 0, 0)
         self.detail_layout.setSpacing(10)
@@ -117,7 +172,7 @@ class RPGNewsPanel(QMainWindow):
         self.cover_image_label.setAlignment(Qt.AlignCenter)
         self.cover_image_label.setStyleSheet("""
             QLabel {
-                background: #f1f5f9;
+                background: #2B3442;
                 border-radius: 10px;
                 border: none;
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
@@ -128,7 +183,7 @@ class RPGNewsPanel(QMainWindow):
         self.detail_title = QLabel()
         self.detail_title.setStyleSheet("""
             QLabel {
-                color: #1e3a8a;
+                color: #F2F2F2;
                 font-size: 24px;
                 font-weight: 700;
                 font-family: 'Georgia', serif;
@@ -146,7 +201,7 @@ class RPGNewsPanel(QMainWindow):
         self.detail_category = QLabel()
         self.detail_category.setStyleSheet("""
             QLabel {
-                color: #3b82f6;
+                color: #C8A45C;
                 font-size: 12px;
                 font-weight: 600;
                 font-family: 'Segoe UI', sans-serif;
@@ -157,7 +212,7 @@ class RPGNewsPanel(QMainWindow):
         self.detail_date = QLabel()
         self.detail_date.setStyleSheet("""
             QLabel {
-                color: #64748b;
+                color: #B8C1CC;
                 font-size: 12px;
                 font-style: italic;
                 font-family: 'Segoe UI', sans-serif;
@@ -168,7 +223,7 @@ class RPGNewsPanel(QMainWindow):
         self.detail_author = QLabel()
         self.detail_author.setStyleSheet("""
             QLabel {
-                color: #64748b;
+                color: #B8C1CC;
                 font-size: 12px;
                 font-family: 'Segoe UI', sans-serif;
                 border: none;
@@ -184,7 +239,7 @@ class RPGNewsPanel(QMainWindow):
         self.detail_content = QLabel()
         self.detail_content.setStyleSheet("""
             QLabel {
-                color: #334155;
+                color: #B8C1CC;
                 font-size: 13px;
                 font-family: 'Segoe UI', sans-serif;
                 border: none;
@@ -198,8 +253,8 @@ class RPGNewsPanel(QMainWindow):
         back_button.setMinimumHeight(30)
         back_button.setStyleSheet("""
             QPushButton {
-                background: #3b82f6;
-                color: #ffffff;
+                background: #C8A45C;
+                color: #2E3746;
                 border: none;
                 border-radius: 8px;
                 font-weight: 600;
@@ -209,7 +264,7 @@ class RPGNewsPanel(QMainWindow):
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             }
             QPushButton:hover {
-                background: #2563eb;
+                background: #6D7A8E;
                 box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
                 transform: scale(1.05);
                 transition: all 0.3s;
@@ -217,6 +272,12 @@ class RPGNewsPanel(QMainWindow):
         """)
         back_button.clicked.connect(self.show_news_list)
         self.detail_layout.addWidget(back_button, 0, Qt.AlignLeft)
+
+        launcher_back = QPushButton("← Volver al Launcher")
+        launcher_back.setObjectName("backToLauncherButton")
+        launcher_back.setMinimumHeight(32)
+        launcher_back.clicked.connect(self.back_to_launcher)
+        self.detail_layout.addWidget(launcher_back, 0, Qt.AlignLeft)
         
         self.detail_layout.addStretch()
         detail_main_layout.addWidget(detail_content, 1)
@@ -232,35 +293,12 @@ class RPGNewsPanel(QMainWindow):
         
         self.quest_index = QListWidget()
         self.quest_index.setMaximumWidth(200)
-        self.quest_index.setStyleSheet("""
-            QListWidget {
-                background: #ffffff;
-                border: none;
-                border-radius: 10px;
-                padding: 5px;
-                font-family: 'Segoe UI', sans-serif;
-                font-size: 13px;
-                color: #1e3a8a;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            }
-            QListWidget::item {
-                padding: 8px;
-                border: none;
-            }
-            QListWidget::item:selected {
-                background: #3b82f6;
-                color: #ffffff;
-                border-radius: 6px;
-            }
-            QListWidget::item:hover {
-                background: #f1f5f9;
-                border-radius: 6px;
-            }
-        """)
+        self.quest_index.setStyleSheet("QListWidget{background:#2E3746;border:1px solid #3A4556;border-radius:10px;color:#F2F2F2;} QListWidget::item{padding:8px;} QListWidget::item:selected{background:#5C6778;border-radius:6px;} QListWidget::item:hover{background:#3A4556;border-radius:6px;}")
         self.quest_index.itemClicked.connect(self.on_quest_index_clicked)
         detail_main_layout.addWidget(self.quest_index)
         
         detail_content = QWidget()
+        detail_content.setObjectName("newsDetailContainer")
         self.quest_detail_layout = QVBoxLayout(detail_content)
         self.quest_detail_layout.setContentsMargins(0, 0, 0, 0)
         self.quest_detail_layout.setSpacing(10)
@@ -269,7 +307,7 @@ class RPGNewsPanel(QMainWindow):
         self.quest_cover_image_label.setAlignment(Qt.AlignCenter)
         self.quest_cover_image_label.setStyleSheet("""
             QLabel {
-                background: #f1f5f9;
+                background: #2B3442;
                 border-radius: 10px;
                 border: none;
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
@@ -280,7 +318,7 @@ class RPGNewsPanel(QMainWindow):
         self.quest_detail_title = QLabel()
         self.quest_detail_title.setStyleSheet("""
             QLabel {
-                color: #1e3a8a;
+                color: #F2F2F2;
                 font-size: 24px;
                 font-weight: 700;
                 font-family: 'Georgia', serif;
@@ -298,7 +336,7 @@ class RPGNewsPanel(QMainWindow):
         self.quest_detail_category = QLabel()
         self.quest_detail_category.setStyleSheet("""
             QLabel {
-                color: #3b82f6;
+                color: #C8A45C;
                 font-size: 12px;
                 font-weight: 600;
                 font-family: 'Segoe UI', sans-serif;
@@ -309,7 +347,7 @@ class RPGNewsPanel(QMainWindow):
         self.quest_detail_date = QLabel()
         self.quest_detail_date.setStyleSheet("""
             QLabel {
-                color: #64748b;
+                color: #B8C1CC;
                 font-size: 12px;
                 font-style: italic;
                 font-family: 'Segoe UI', sans-serif;
@@ -320,7 +358,7 @@ class RPGNewsPanel(QMainWindow):
         self.quest_detail_author = QLabel()
         self.quest_detail_author.setStyleSheet("""
             QLabel {
-                color: #64748b;
+                color: #B8C1CC;
                 font-size: 12px;
                 font-family: 'Segoe UI', sans-serif;
                 border: none;
@@ -336,7 +374,7 @@ class RPGNewsPanel(QMainWindow):
         self.quest_detail_content = QLabel()
         self.quest_detail_content.setStyleSheet("""
             QLabel {
-                color: #334155;
+                color: #B8C1CC;
                 font-size: 13px;
                 font-family: 'Segoe UI', sans-serif;
                 border: none;
@@ -350,8 +388,8 @@ class RPGNewsPanel(QMainWindow):
         back_button.setMinimumHeight(30)
         back_button.setStyleSheet("""
             QPushButton {
-                background: #3b82f6;
-                color: #ffffff;
+                background: #C8A45C;
+                color: #2E3746;
                 border: none;
                 border-radius: 8px;
                 font-weight: 600;
@@ -361,7 +399,7 @@ class RPGNewsPanel(QMainWindow):
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             }
             QPushButton:hover {
-                background: #2563eb;
+                background: #6D7A8E;
                 box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
                 transform: scale(1.05);
                 transition: all 0.3s;
@@ -369,6 +407,12 @@ class RPGNewsPanel(QMainWindow):
         """)
         back_button.clicked.connect(self.show_quest_list)
         self.quest_detail_layout.addWidget(back_button, 0, Qt.AlignLeft)
+
+        launcher_back = QPushButton("← Volver al Launcher")
+        launcher_back.setObjectName("backToLauncherButton")
+        launcher_back.setMinimumHeight(32)
+        launcher_back.clicked.connect(self.back_to_launcher)
+        self.quest_detail_layout.addWidget(launcher_back, 0, Qt.AlignLeft)
         
         self.quest_detail_layout.addStretch()
         detail_main_layout.addWidget(detail_content, 1)
@@ -556,7 +600,7 @@ class RPGNewsPanel(QMainWindow):
             {
                 "title": "TORNEO REAL",
                 "date": "Hoy - 20:00",
-                "color": "#3b82f6",
+                "color": "#C8A45C",
                 "icon": "tournament",
                 "description": "Compite por el trono"
             },
@@ -629,278 +673,127 @@ class RPGNewsPanel(QMainWindow):
         """)
     
     def create_sidebar(self, main_layout):
-        """Crear barra lateral mejorada"""
+        """Crear barra lateral con botones visibles y consistentes."""
         sidebar = QWidget()
-        sidebar.setFixedWidth(80)
-        sidebar.setStyleSheet("""
-            QWidget {
-                background: #1e40af;
-                border: none;
-            }
-        """)
-        
+        sidebar.setObjectName("newsSidebar")
+        sidebar.setFixedWidth(220)
+
         sidebar_layout = QVBoxLayout(sidebar)
-        sidebar_layout.setContentsMargins(0, 10, 0, 10)
+        sidebar_layout.setContentsMargins(12, 12, 12, 12)
         sidebar_layout.setSpacing(10)
-        sidebar_layout.setAlignment(Qt.AlignTop)
-        
-        # Logo con manejo de error
-        logo = QLabel()
-        pixmap = QPixmap(":/icons/sword-shield.png")
-        if pixmap.isNull():
-            print("Error: No se pudo cargar sword-shield.png. Usando placeholder.")
-            logo.setText("Logo")
-            logo.setStyleSheet("""
-                QLabel {
-                    color: #ffffff;
-                    font-size: 16px;
-                    font-weight: 700;
-                    font-family: 'Georgia', serif;
-                    border: none;
-                }
-            """)
-        else:
-            logo.setPixmap(pixmap.scaledToWidth(40, Qt.SmoothTransformation))
-        logo.setAlignment(Qt.AlignCenter)
-        logo.setStyleSheet("margin-bottom: 10px; border: none;")
+
+        logo = QLabel("⚔️  FOSTER NEWS")
+        logo.setStyleSheet("color: #C8A45C; font-size: 15px; font-weight: 700;")
         sidebar_layout.addWidget(logo)
-        
-        # Botones de navegación
+
+        self.back_launcher_btn = QPushButton("← Volver al Launcher")
+        self.back_launcher_btn.setObjectName("backToLauncherButton")
+        self.back_launcher_btn.clicked.connect(self.back_to_launcher)
+        sidebar_layout.addWidget(self.back_launcher_btn)
+
         nav_items = [
-            ("home", "Inicio", True),
-            ("map", "Mapa", False),
-            ("scroll", "Crónicas", False),
-            ("quest", "Misiones", False),
-            ("guild", "Clanes", False)
+            ("🏠  Inicio", self.show_news_list, True),
+            ("📰  Crónicas", self.show_news_list, False),
+            ("⚔️  Misiones", self.show_quest_list, False),
+            ("👥  Comunidad", None, False),
+            ("🛡️  Eventos", None, False),
         ]
-        
+
         self.sidebar_buttons = []
-        
-        for icon_name, tooltip, active in nav_items:
-            btn = QPushButton()
-            btn.setIcon(QIcon(f":/icons/{icon_name}.png"))
-            btn.setIconSize(QSize(30, 30))
-            btn.setMinimumSize(60, 50)
-            btn.setToolTip(tooltip)
+        for text, handler, active in nav_items:
+            btn = QPushButton(text)
+            btn.setObjectName("sidebarButton")
+            btn.setMinimumHeight(44)
             btn.setCheckable(True)
             btn.setChecked(active)
-            
-            shadow = QGraphicsDropShadowEffect()
-            shadow.setBlurRadius(15)
-            shadow.setColor(QColor(0, 0, 0, 100))
-            shadow.setOffset(0, 2)
-            btn.setGraphicsEffect(shadow)
-            
-            base_style = """
-                QPushButton {
-                    background: transparent;
-                    border-radius: 10px;
-                    border: none;
-                    padding: 5px;
-                    transition: all 0.3s;
-                }
-                QPushButton:hover {
-                    background: rgba(59, 130, 246, 0.4);
-                    transform: scale(1.1);
-                }
-            """
-            active_style = """
-                QPushButton:checked {
-                    background: #3b82f6;
-                }
-            """ if active else ""
-            
-            btn.setStyleSheet(base_style + active_style)
-            
-            if tooltip == "Crónicas":
-                btn.clicked.connect(self.show_news_list)
-            elif tooltip == "Misiones":
-                btn.clicked.connect(self.show_quest_list)
-            
-            sidebar_layout.addWidget(btn, 0, Qt.AlignHCenter)
+            if handler:
+                btn.clicked.connect(handler)
+            btn.clicked.connect(lambda _=False, b=btn: self._set_sidebar_active(b))
+            sidebar_layout.addWidget(btn)
             self.sidebar_buttons.append(btn)
-        
+
         sidebar_layout.addStretch()
-        
-        profile_btn = QPushButton()
-        profile_btn.setIcon(QIcon(":/icons/knight.png"))
-        profile_btn.setIconSize(QSize(30, 30))
-        profile_btn.setMinimumSize(60, 50)
-        profile_btn.setToolTip("Mi Personaje")
-        profile_btn.setStyleSheet("""
-            QPushButton {
-                background: transparent;
-                border-radius: 10px;
-                border: none;
-                padding: 5px;
-                transition: all 0.3s;
-            }
-            QPushButton:hover {
-                background: rgba(59, 130, 246, 0.4);
-                transform: scale(1.1);
-            }
-        """)
-        profile_btn.setGraphicsEffect(shadow)
-        sidebar_layout.addWidget(profile_btn, 0, Qt.AlignHCenter)
-        
         main_layout.addWidget(sidebar)
-    
+
+    def _set_sidebar_active(self, active_btn):
+        for btn in getattr(self, 'sidebar_buttons', []):
+            btn.setChecked(btn is active_btn)
+
+    def back_to_launcher(self):
+        """Regresar al launcher principal cuando este panel se usa embebido."""
+        if self.launcher and hasattr(self.launcher, 'show_main_page'):
+            self.launcher.show_main_page()
+        else:
+            self.close()
+
     def create_main_content(self, main_layout):
-        """Crear contenido principal mejorado"""
+        """Crear contenido principal con diseño oscuro consistente."""
         content = QWidget()
+        content.setObjectName("mainContent")
         content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(10, 10, 10, 10)
-        content_layout.setSpacing(10)
-        
-        # Header
+        content_layout.setContentsMargins(12, 12, 12, 12)
+        content_layout.setSpacing(12)
+
         header = QWidget()
+        header.setObjectName("newsHeaderCard")
         header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(0, 0, 0, 10)
-        
+        header_layout.setContentsMargins(12, 10, 12, 10)
+
         title = QLabel("CRÓNICAS DEL REINO")
-        title.setStyleSheet("""
-            QLabel {
-                color: #1e3a8a;
-                font-size: 24px;
-                font-weight: 700;
-                font-family: 'Georgia', serif;
-                letter-spacing: 1px;
-                border: none;
-            }
-        """)
-        
+        title.setObjectName("newsTitle")
+
         search_container = QWidget()
         search_layout = QHBoxLayout(search_container)
+        search_layout.setContentsMargins(0, 0, 0, 0)
         search_layout.setSpacing(10)
-        
+
         self.search_bar = QLineEdit()
         self.search_bar.setPlaceholderText("Buscar en las crónicas...")
-        self.search_bar.setMinimumHeight(30)
-        self.search_bar.setStyleSheet("""
-            QLineEdit {
-                background: #ffffff;
-                border: none;
-                border-radius: 8px;
-                padding: 0 10px;
-                color: #1e3a8a;
-                font-size: 12px;
-                font-family: 'Segoe UI', sans-serif;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            }
-            QLineEdit:focus {
-                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-            }
-        """)
+        self.search_bar.setMinimumHeight(34)
         self.search_bar.textChanged.connect(self.filter_news)
-        
+
         self.category_filter = QComboBox()
         self.category_filter.addItems(self.categories)
-        self.category_filter.setMinimumWidth(150)
-        self.category_filter.setMinimumHeight(30)
-        self.category_filter.setStyleSheet("""
-            QComboBox {
-                background: #ffffff;
-                border: none;
-                border-radius: 8px;
-                padding: 0 10px;
-                color: #1e3a8a;
-                font-size: 12px;
-                font-family: 'Segoe UI', sans-serif;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            }
-            QComboBox::drop-down {
-                border: none;
-                width: 20px;
-            }
-            QComboBox::down-arrow {
-                image: url(:/icons/chevron-down.png);
-                width: 12px;
-                height: 12px;
-            }
-            QComboBox QAbstractItemView {
-                background: #ffffff;
-                border: none;
-                selection-background-color: #3b82f6;
-                color: #1e3a8a;
-            }
-        """)
+        self.category_filter.setMinimumWidth(170)
+        self.category_filter.setMinimumHeight(34)
         self.category_filter.currentTextChanged.connect(self.filter_news)
-        
+
         search_layout.addWidget(self.search_bar)
         search_layout.addWidget(self.category_filter)
-        
+
         header_layout.addWidget(title)
         header_layout.addStretch()
         header_layout.addWidget(search_container)
-        
+
         content_layout.addWidget(header)
-        
+
         self.events_scroll = QScrollArea()
         self.events_scroll.setWidgetResizable(True)
-        self.events_scroll.setMaximumHeight(100)  # Límite máximo de altura
-        self.events_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)  # Deshabilitar scroll horizontal
-        self.events_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)  # Deshabilitar scroll vertical
-        self.events_scroll.setStyleSheet("""
-            QScrollArea {
-                border: none;
-                background: transparent;
-            }
-            QScrollBar:horizontal {
-                background: #f1f5f9;
-                height: 0;
-                border: none;
-            }
-            QScrollBar:vertical {
-                background: transparent;
-                width: 0;
-                border: none;
-            }
-        """)
-        
+        self.events_scroll.setMaximumHeight(110)
+        self.events_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.events_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
         self.events_container = QWidget()
         self.events_layout = QHBoxLayout(self.events_container)
-        self.events_layout.setContentsMargins(5, 5, 5, 5)
-        self.events_layout.setSpacing(5)
-        
+        self.events_layout.setContentsMargins(0, 0, 0, 0)
+        self.events_layout.setSpacing(8)
+
         self.events_scroll.setWidget(self.events_container)
         content_layout.addWidget(self.events_scroll)
-        
+
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
-        self.scroll.setStyleSheet("""
-            QScrollArea {
-                border: none;
-                background: transparent;
-            }
-            QScrollBar:vertical {
-                background: #f1f5f9;
-                width: 8px;
-                margin: 0 2px 0 2px;
-                border-radius: 4px;
-                border: none;
-            }
-            QScrollBar::handle:vertical {
-                background: #3b82f6;
-                min-height: 20px;
-                border-radius: 4px;
-                border: none;
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0;
-                border: none;
-            }
-        """)
-        
+
         self.news_container = QWidget()
         self.news_layout = QVBoxLayout(self.news_container)
         self.news_layout.setContentsMargins(0, 0, 0, 0)
         self.news_layout.setSpacing(10)
-        
+
         self.scroll.setWidget(self.news_container)
         content_layout.addWidget(self.scroll)
-        
+
         main_layout.addWidget(content)
-    
+
     def filter_news(self):
         """Filtrar noticias por búsqueda y categoría"""
         if not hasattr(self, 'news_layout') or self.news_layout is None:
@@ -974,17 +867,18 @@ class RPGNewsPanel(QMainWindow):
     def create_event_card(self, event, card_width):
         """Crear tarjeta de evento con ancho ajustable"""
         event_card = QWidget()
+        event_card.setObjectName("eventCard")
         event_card.setMinimumHeight(70)
         event_card.setMinimumWidth(card_width)  # Ajustar ancho dinámicamente
         event_card.setStyleSheet(f"""
             QWidget {{
-                background: #ffffff;
+                background: #2E3746;
                 border-radius: 8px;
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
                 border: none;
             }}
             QWidget:hover {{
-                background: #f8fafc;
+                background: #334052;
                 transform: scale(1.03);
                 transition: all 0.3s;
                 box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
@@ -999,7 +893,7 @@ class RPGNewsPanel(QMainWindow):
         pixmap = QPixmap(f":/icons/{event['icon']}.png")
         if pixmap.isNull():
             icon.setText("Icon")
-            icon.setStyleSheet("color: #64748b; font-size: 12px;")
+            icon.setStyleSheet("color: #B8C1CC; font-size: 12px;")
         else:
             icon.setPixmap(pixmap.scaled(25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         icon.setStyleSheet("border: none;")
@@ -1023,7 +917,7 @@ class RPGNewsPanel(QMainWindow):
         date = QLabel(event["date"])
         date.setStyleSheet("""
             QLabel {
-                color: #64748b;
+                color: #B8C1CC;
                 font-size: 11px;  /* Aumentar tamaño de fuente */
                 font-family: 'Segoe UI', sans-serif;
                 border: none;
@@ -1033,7 +927,7 @@ class RPGNewsPanel(QMainWindow):
         desc = QLabel(event["description"])
         desc.setStyleSheet("""
             QLabel {
-                color: #475569;
+                color: #B8C1CC;
                 font-size: 11px;  /* Aumentar tamaño de fuente */
                 font-style: italic;
                 font-family: 'Segoe UI', sans-serif;
@@ -1054,21 +948,8 @@ class RPGNewsPanel(QMainWindow):
     def create_news_card(self, item):
         """Crear tarjeta de noticia mejorada"""
         card = QWidget()
+        card.setObjectName("newsCard")
         card.setMinimumHeight(140)
-        card.setStyleSheet("""
-            QWidget {
-                background: #ffffff;
-                border-radius: 8px;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-                border: none;
-            }
-            QWidget:hover {
-                background: #f8fafc;
-                transform: scale(1.02);
-                transition: all 0.3s;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-            }
-        """)
         
         card_layout = QHBoxLayout(card)
         card_layout.setContentsMargins(10, 10, 10, 10)
@@ -1082,7 +963,7 @@ class RPGNewsPanel(QMainWindow):
         category = QLabel(item.get("category", "").upper())
         category.setStyleSheet("""
             QLabel {
-                color: #3b82f6;
+                color: #C8A45C;
                 font-size: 12px;
                 font-weight: 600;
                 letter-spacing: 1px;
@@ -1094,7 +975,7 @@ class RPGNewsPanel(QMainWindow):
         title = QLabel(item.get("title", ""))
         title.setStyleSheet("""
             QLabel {
-                color: #1e3a8a;
+                color: #F2F2F2;
                 font-size: 18px;
                 font-weight: 700;
                 font-family: 'Georgia', serif;
@@ -1111,7 +992,7 @@ class RPGNewsPanel(QMainWindow):
         date = QLabel(item.get("date", ""))
         date.setStyleSheet("""
             QLabel {
-                color: #64748b;
+                color: #B8C1CC;
                 font-size: 11px;
                 font-style: italic;
                 font-family: 'Segoe UI', sans-serif;
@@ -1122,7 +1003,7 @@ class RPGNewsPanel(QMainWindow):
         author = QLabel(f"Por: {item.get('author', 'Anónimo')}")
         author.setStyleSheet("""
             QLabel {
-                color: #64748b;
+                color: #B8C1CC;
                 font-size: 11px;
                 font-family: 'Segoe UI', sans-serif;
                 border: none;
@@ -1136,7 +1017,7 @@ class RPGNewsPanel(QMainWindow):
         content = QLabel(item.get("content", ""))
         content.setStyleSheet("""
             QLabel {
-                color: #334155;
+                color: #B8C1CC;
                 font-size: 12px;
                 font-family: 'Segoe UI', sans-serif;
                 border: none;
@@ -1149,8 +1030,8 @@ class RPGNewsPanel(QMainWindow):
         btn.setMinimumHeight(30)
         btn.setStyleSheet("""
             QPushButton {
-                background: #3b82f6;
-                color: #ffffff;
+                background: #C8A45C;
+                color: #2E3746;
                 border: none;
                 border-radius: 6px;
                 font-weight: 600;
@@ -1160,7 +1041,7 @@ class RPGNewsPanel(QMainWindow):
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             }
             QPushButton:hover {
-                background: #2563eb;
+                background: #6D7A8E;
                 box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
                 transform: scale(1.05);
                 transition: all 0.3s;
@@ -1179,7 +1060,7 @@ class RPGNewsPanel(QMainWindow):
         image_container.setMinimumSize(150, 80)
         image_container.setStyleSheet("""
             QWidget {
-                background: #f1f5f9;
+                background: #2B3442;
                 border-radius: 8px;
                 border: none;
             }
