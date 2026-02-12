@@ -88,7 +88,7 @@ class ModernGameLauncher(QMainWindow):
         
         # Eliminar la barra de título nativa y hacer fondo translúcido
         self.setWindowFlags(Qt.FramelessWindowHint)
-        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WA_TranslucentBackground, False)
         
         # Variables de control
         self.available_updates = []
@@ -114,7 +114,7 @@ class ModernGameLauncher(QMainWindow):
         
         # Layout principal
         self.main_layout = QVBoxLayout(self.central_widget)
-        self.main_layout.setContentsMargins(20, 20, 20, 20)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
         
         # Panel principal con diseño MMORPG
@@ -179,15 +179,15 @@ class ModernGameLauncher(QMainWindow):
         #mainPanel {
             background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                 stop:0 #1F2630, stop:0.45 #2B3442, stop:1 #1F2630);
-            border-radius: 18px;
+            border-radius: 0px;
             border: 1px solid #4A576B;
         }
 
         #titleBar {
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                 stop:0 #2E3746, stop:0.5 #3A4556, stop:1 #2E3746);
-            border-top-left-radius: 16px;
-            border-top-right-radius: 16px;
+            border-top-left-radius: 0px;
+            border-top-right-radius: 0px;
             color: #F2F2F2;
             border-bottom: 1px solid #C8A45C;
         }
@@ -212,6 +212,34 @@ class ModernGameLauncher(QMainWindow):
             border: 1px solid #3A4556;
             border-radius: 12px;
             padding: 10px;
+        }
+
+        #topInfoBar {
+            background: #222c3a;
+            border: 1px solid #3A4556;
+            border-radius: 8px;
+        }
+
+        #heroCard {
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                stop:0 #2B3442, stop:1 #323D4D);
+            border: 1px solid #46556B;
+            border-radius: 10px;
+        }
+
+        #heroTitle {
+            color: #C8A45C;
+            font-size: 34px;
+            font-weight: 700;
+        }
+
+        #heroSub {
+            color: #B8C1CC;
+            font-size: 14px;
+        }
+
+        #rightRail {
+            background: transparent;
         }
 
         QGroupBox {
@@ -347,9 +375,11 @@ class ModernGameLauncher(QMainWindow):
         
         self.logo_label = QLabel()
         self.logo_label.setObjectName("logoLabel")
-        if os.path.exists(LOGO_IMAGE_PATH):
-            pixmap = QPixmap(LOGO_IMAGE_PATH).scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            self.logo_label.setPixmap(pixmap)
+        logo_candidates = ["icons/sword-shield.png", LOGO_IMAGE_PATH, "assets/Logo.png"]
+        logo_path = next((path for path in logo_candidates if path and os.path.exists(path)), "")
+        pixmap = QPixmap(logo_path) if logo_path else QPixmap()
+        if not pixmap.isNull():
+            self.logo_label.setPixmap(pixmap.scaled(28, 28, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         else:
             self.logo_label.setText("⚔️")
             self.logo_label.setStyleSheet("font-size: 20px; color: #F2F2F2;")
@@ -424,51 +454,64 @@ class ModernGameLauncher(QMainWindow):
             event.accept()
 
     def setup_main_page(self):
-        """Página principal del launcher"""
+        """Página principal del launcher con estructura inspirada en Black Desert."""
         self.main_page = QWidget()
         layout = QVBoxLayout(self.main_page)
-        layout.setContentsMargins(24, 18, 24, 20)
-        
-        # Header principal
-        header_label = QLabel("🏰 RPG MAKER GAME LAUNCHER 🏰")
-        header_label.setStyleSheet("""
-            QLabel {
-                color: #C8A45C;
-                font-size: 32px;
-                font-weight: bold;
-                text-align: center;
-                margin: 10px;
-            }
-        """)
-        header_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(header_label)
-        
-        sub_label = QLabel("Embárcate en una aventura épica - Tu leyenda comienza aquí")
-        sub_label.setStyleSheet("color: #B8C1CC; font-size: 14px; text-align: center;")
-        sub_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(sub_label)
-        
+        layout.setContentsMargins(24, 16, 24, 18)
+        layout.setSpacing(12)
+
+        # Barra superior informativa (similar a launcher de referencia)
+        top_bar = QWidget()
+        top_bar.setObjectName("topInfoBar")
+        top_layout = QHBoxLayout(top_bar)
+        top_layout.setContentsMargins(14, 6, 14, 6)
+
+        links = QLabel("Página oficial   |   Noticias   |   Soporte   |   Centro de Seguridad")
+        links.setStyleSheet("color: #B8C1CC; font-size: 11px;")
+        version_tag = QLabel("VER 1.29.3")
+        version_tag.setStyleSheet("color: #B8C1CC; font-size: 11px; font-weight: bold;")
+        top_layout.addWidget(links)
+        top_layout.addStretch()
+        top_layout.addWidget(version_tag)
+        layout.addWidget(top_bar)
+
+        # Hero principal
+        hero = QFrame()
+        hero.setObjectName("heroCard")
+        hero_layout = QVBoxLayout(hero)
+        hero_layout.setContentsMargins(22, 18, 22, 18)
+
+        hero_title = QLabel("🏰 RPG MAKER GAME LAUNCHER")
+        hero_title.setObjectName("heroTitle")
+        hero_sub = QLabel("Embárcate en una aventura épica · Tu leyenda comienza aquí")
+        hero_sub.setObjectName("heroSub")
+        hero_layout.addWidget(hero_title)
+        hero_layout.addWidget(hero_sub)
+
+        layout.addWidget(hero)
+
         # Contenido principal estructurado en dos columnas
         content_panel = QWidget()
         content_panel.setObjectName("contentPanel")
         content_layout = QHBoxLayout(content_panel)
-        content_layout.setContentsMargins(10, 10, 10, 10)
-        content_layout.setSpacing(18)
+        content_layout.setContentsMargins(12, 12, 12, 12)
+        content_layout.setSpacing(16)
 
-        # Panel izquierdo - Estado y noticias
+        # Columna izquierda: estado y crónicas
         left_panel = self.create_status_panel()
         content_layout.addWidget(left_panel, 2)
 
-        # Panel derecho - Control del juego
+        # Columna derecha: controles de juego
         right_panel = self.create_game_control_panel()
+        right_panel.setObjectName("rightRail")
         content_layout.addWidget(right_panel, 1)
 
         layout.addWidget(content_panel)
-        
+
         # Footer con estadísticas
         footer = self.create_footer()
         layout.addWidget(footer)
-        
+
         self.content_stack.addWidget(self.main_page)
 
     def create_status_panel(self):
