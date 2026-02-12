@@ -1,0 +1,19 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>sword-shield.png</file>
+        <file>home.png</file>
+        <file>map.png</file>
+        <file>scroll.png</file>
+        <file>quest.png</file>
+        <file>guild.png</file>
+        <file>knight.png</file>
+        <file>tournament.png</file>
+        <file>dragon.png</file>
+        <file>moon.png</file>
+        <file>chevron-down.png</file>
+    </qresource>
+    <qresource prefix="/fonts">
+        <file>SegoeUI.ttf</file>
+        <file>Georgia.ttf</file>
+    </qresource>
+</RCC>
