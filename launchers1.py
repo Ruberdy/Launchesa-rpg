@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
                             QLabel, QPushButton, QProgressBar, QTextBrowser, QFrame, 
                             QMessageBox, QMenu, QSizePolicy, QStackedWidget, QGraphicsDropShadowEffect,
                             QListWidget, QListWidgetItem, QLineEdit, QComboBox, QGroupBox)
-from PyQt5.QtCore import Qt, QTimer, QUrl, QSize, QObject, pyqtSignal, QPropertyAnimation, QEasingCurve, QPoint
+from PyQt5.QtCore import Qt, QTimer, QUrl, QSize, QObject, pyqtSignal, QPropertyAnimation, QEasingCurve, QPoint, QThread
 from PyQt5.QtGui import QPixmap, QFont, QDesktopServices, QIcon, QColor, QLinearGradient, QPainter, QFontDatabase
 
 # Importar módulos existentes
@@ -82,6 +82,141 @@ class WorkerSignals(QObject):
     server_status_updated = pyqtSignal(dict)
     extraction_progress = pyqtSignal(str, str)  # Nuevo: para mostrar archivos extraídos
 
+
+def calculate_file_sha256(file_path, chunk_size=8192):
+    """Calcular hash SHA256 de un archivo local."""
+    sha256 = hashlib.sha256()
+    with open(file_path, 'rb') as file_obj:
+        while True:
+            chunk = file_obj.read(chunk_size)
+            if not chunk:
+                break
+            sha256.update(chunk)
+    return sha256.hexdigest()
+
+
+class FileVerifier(QThread):
+    """Hilo de verificación y reparación de archivos usando manifest remoto."""
+
+    status_changed = pyqtSignal(str)
+    progress_changed = pyqtSignal(int, str, str)
+    verification_finished = pyqtSignal(bool, str)
+
+    def __init__(self, config_path="launcher.json", game_root="."):
+        super().__init__()
+        self.config_path = config_path
+        self.game_root = os.path.abspath(game_root)
+
+    def _read_launcher_config(self):
+        with open(self.config_path, 'r', encoding='utf-8') as f:
+            launcher_config = json.load(f)
+
+        manifest_url = launcher_config.get("manifest_url", "").strip()
+        files_base_url = launcher_config.get("files_base_url", "").strip()
+
+        if not manifest_url or not files_base_url:
+            raise ValueError("launcher.json debe incluir 'manifest_url' y 'files_base_url'.")
+
+        return manifest_url, files_base_url
+
+    def _download_manifest(self, manifest_url):
+        response = requests.get(manifest_url, timeout=20)
+        response.raise_for_status()
+        return response.json()
+
+    def run(self):
+        try:
+            self.status_changed.emit("Iniciando verificación de archivos...")
+            self.progress_changed.emit(0, "0%", "Leyendo configuración local...")
+
+            manifest_url, files_base_url = self._read_launcher_config()
+            self.status_changed.emit("Descargando manifiesto remoto...")
+            self.progress_changed.emit(5, "", "Obteniendo manifest.json")
+
+            manifest_data = self._download_manifest(manifest_url)
+            manifest_files = manifest_data.get("files", {})
+
+            if not isinstance(manifest_files, dict) or not manifest_files:
+                raise ValueError("El manifest.json no contiene archivos válidos en 'files'.")
+
+            to_download = []
+            total_files = len(manifest_files)
+
+            self.status_changed.emit("Verificando integridad local...")
+            for index, (relative_path, metadata) in enumerate(manifest_files.items(), 1):
+                expected_hash = str(metadata.get("hash", "")).lower()
+                local_path = os.path.normpath(os.path.join(self.game_root, relative_path))
+
+                if not os.path.exists(local_path):
+                    to_download.append((relative_path, metadata))
+                else:
+                    current_hash = calculate_file_sha256(local_path)
+                    if current_hash.lower() != expected_hash:
+                        to_download.append((relative_path, metadata))
+
+                verify_progress = 5 + int((index / total_files) * 35)
+                self.progress_changed.emit(
+                    verify_progress,
+                    "",
+                    f"Verificando {index}/{total_files}: {relative_path}"
+                )
+
+            if not to_download:
+                self.progress_changed.emit(100, "100%", "Todos los archivos están íntegros.")
+                self.verification_finished.emit(True, "Verificación completada. No se requieren reparaciones.")
+                return
+
+            total_download_bytes = sum(int(item[1].get("size", 0)) for item in to_download)
+            downloaded_bytes = 0
+
+            self.status_changed.emit(f"Reparando {len(to_download)} archivo(s)...")
+
+            for file_index, (relative_path, metadata) in enumerate(to_download, 1):
+                expected_hash = str(metadata.get("hash", "")).lower()
+                file_url = f"{files_base_url.rstrip('/')}/{relative_path.replace(os.sep, '/')}"
+                local_path = os.path.normpath(os.path.join(self.game_root, relative_path))
+                os.makedirs(os.path.dirname(local_path), exist_ok=True) if os.path.dirname(local_path) else None
+
+                file_start = time.time()
+                file_downloaded = 0
+
+                response = requests.get(file_url, stream=True, timeout=30)
+                response.raise_for_status()
+
+                with open(local_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if not chunk:
+                            continue
+                        f.write(chunk)
+                        chunk_len = len(chunk)
+                        file_downloaded += chunk_len
+                        downloaded_bytes += chunk_len
+
+                        elapsed = max(time.time() - file_start, 0.001)
+                        speed_kb = (file_downloaded / 1024) / elapsed
+
+                        if total_download_bytes > 0:
+                            progress = 40 + int((downloaded_bytes / total_download_bytes) * 50)
+                        else:
+                            progress = 40 + int((file_index / len(to_download)) * 50)
+
+                        self.progress_changed.emit(
+                            min(progress, 95),
+                            f"{speed_kb:.1f} KB/s",
+                            f"Reparando {file_index}/{len(to_download)}: {relative_path}"
+                        )
+
+                # Verificación posterior a descarga
+                downloaded_hash = calculate_file_sha256(local_path).lower()
+                if downloaded_hash != expected_hash:
+                    raise ValueError(f"Hash inválido tras reparar: {relative_path}")
+
+            self.progress_changed.emit(100, "100%", "Verificación y reparación completadas.")
+            self.verification_finished.emit(True, "Archivos verificados y reparados correctamente.")
+
+        except (requests.RequestException, ValueError, OSError, json.JSONDecodeError) as e:
+            self.verification_finished.emit(False, f"Error en verificación/reparación: {e}")
+
 class ModernGameLauncher(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -99,6 +234,7 @@ class ModernGameLauncher(QMainWindow):
         self.server_status = {"online": False, "players": 0, "uptime": "0h"}
         self.current_version = "0.0.0"
         self.latest_version = "0.0.0"
+        self.file_verifier_thread = None
         
         # Configuración de la ventana
         self.setWindowTitle("FosterGames RPG MAKER Launcher")
@@ -1291,8 +1427,34 @@ class ModernGameLauncher(QMainWindow):
 
     def verify_files(self):
         """Verificar integridad de archivos"""
-        self._update_status("Verificando archivos del juego...")
-        QTimer.singleShot(2000, lambda: self._update_status("Verificación completada"))
+        if self.file_verifier_thread and self.file_verifier_thread.isRunning():
+            QMessageBox.information(self, "Verificación en curso", "Ya hay una verificación de archivos ejecutándose.")
+            return
+
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setValue(0)
+        self.update_button.setEnabled(False)
+        self.play_button.setEnabled(False)
+        self._update_status("Preparando verificación y reparación...")
+        self.details_label.setText("Leyendo launcher.json...")
+
+        self.file_verifier_thread = FileVerifier(config_path=CONFIG_PATH, game_root=".")
+        self.file_verifier_thread.status_changed.connect(self._update_status)
+        self.file_verifier_thread.progress_changed.connect(self._update_progress)
+        self.file_verifier_thread.verification_finished.connect(self._handle_file_verification_finished)
+        self.file_verifier_thread.start()
+
+    def _handle_file_verification_finished(self, success, message):
+        """Finalizar flujo de verificación/restauración de archivos."""
+        self.update_button.setEnabled(True)
+        self.play_button.setEnabled(True)
+
+        if success:
+            self._update_status("Verificación completada")
+            self.details_label.setText(message)
+            QMessageBox.information(self, "Verificación de archivos", message)
+        else:
+            self._show_error(message)
 
     def clear_cache(self):
         """Limpiar caché"""
