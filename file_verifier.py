@@ -1,7 +1,7 @@
 import hashlib
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
-from urllib.parse import quote, urljoin
+from urllib.parse import quote, urlparse, urlunparse
 
 import requests
 
@@ -98,7 +98,22 @@ def _build_file_url(path: str, files_base_url: str, custom_url: Optional[str] = 
         raise FileVerifierError("files_base_url no está configurado.")
 
     encoded_path = quote(path, safe="/-_.")
-    return urljoin(files_base_url.rstrip("/") + "/", encoded_path)
+    parsed = urlparse(files_base_url)
+
+    if not parsed.scheme or not parsed.netloc:
+        raise FileVerifierError("files_base_url no es una URL válida.")
+
+    base_path = parsed.path.rstrip("/")
+    combined_path = f"{base_path}/{encoded_path}" if base_path else f"/{encoded_path}"
+
+    return urlunparse((
+        parsed.scheme,
+        parsed.netloc,
+        combined_path,
+        parsed.params,
+        parsed.query,
+        parsed.fragment,
+    ))
 
 
 def _download_file(url: str, destination: Path, timeout: int = 60) -> None:
@@ -185,7 +200,11 @@ def verify_and_repair_files(
 
                 downloaded_hash = calculate_sha256(target_path)
                 if downloaded_hash.lower() != expected_hash:
-                    raise FileVerifierError("Hash SHA256 no coincide después de descargar")
+                    file_size = target_path.stat().st_size if target_path.exists() else 0
+                    raise FileVerifierError(
+                        "Hash SHA256 no coincide después de descargar "
+                        f"(esperado={expected_hash}, obtenido={downloaded_hash}, bytes={file_size}, url={file_url})"
+                    )
 
                 downloaded += 1
                 if state == "corrupto":

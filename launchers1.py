@@ -84,6 +84,7 @@ class WorkerSignals(QObject):
     game_install_status = pyqtSignal(str)
     server_status_updated = pyqtSignal(dict)
     extraction_progress = pyqtSignal(str, str)  # Nuevo: para mostrar archivos extraídos
+    verification_ui_lock = pyqtSignal(bool)
 
 class ModernGameLauncher(QMainWindow):
     def __init__(self):
@@ -102,6 +103,7 @@ class ModernGameLauncher(QMainWindow):
         self.server_status = {"online": False, "players": 0, "uptime": "0h"}
         self.current_version = "0.0.0"
         self.latest_version = "0.0.0"
+        self.primary_action_buttons = []
         
         # Configuración de la ventana
         self.setWindowTitle("FosterGames RPG MAKER Launcher")
@@ -630,6 +632,7 @@ class ModernGameLauncher(QMainWindow):
             btn.setMinimumHeight(35)
             btn.clicked.connect(slot)
             action_layout.addWidget(btn)
+            self.primary_action_buttons.append(btn)
         
         layout.addLayout(action_layout)
         
@@ -793,6 +796,7 @@ class ModernGameLauncher(QMainWindow):
         self.worker_signals.game_install_status.connect(self._update_game_install_status)
         self.worker_signals.server_status_updated.connect(self._update_server_status)
         self.worker_signals.extraction_progress.connect(self._update_extraction_progress)  # Nueva señal
+        self.worker_signals.verification_ui_lock.connect(self._set_verification_ui_lock)
 
     # ========== FUNCIONALIDAD PRINCIPAL ==========
 
@@ -1298,6 +1302,7 @@ class ModernGameLauncher(QMainWindow):
             self._show_error("Configura manifest_url y files_base_url en launcher.json para verificar archivos.")
             return
 
+        self.worker_signals.verification_ui_lock.emit(True)
         self._update_status("Verificando archivos del juego...")
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
@@ -1340,6 +1345,16 @@ class ModernGameLauncher(QMainWindow):
             self.worker_signals.error_signal.emit(f"Error durante la verificación: {error}")
         except Exception as error:
             self.worker_signals.error_signal.emit(f"Error inesperado durante la verificación: {error}")
+        finally:
+            self.worker_signals.verification_ui_lock.emit(False)
+
+    def _set_verification_ui_lock(self, locked):
+        """Ocultar/mostrar botones principales mientras se verifica/repara."""
+        visible = not locked
+        if hasattr(self, "play_button"):
+            self.play_button.setVisible(visible)
+        for btn in getattr(self, "primary_action_buttons", []):
+            btn.setVisible(visible)
 
     def clear_cache(self):
         """Limpiar caché"""
