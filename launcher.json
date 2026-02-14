@@ -9,7 +9,7 @@
   "GAME_EXECUTABLE": "Game.exe",
   "GAME_INSTALLER_URL": "https://drive.google.com/file/d/1SMtA-zgF1mkJKMR9-UoVjXqR0Ei4LwnN/view?usp=sharing",
   "BACKGROUND_IMAGE_PATH": "background.jpg",
-  "LOGO_IMAGE_PATH": "assets/logo.png"
+  "LOGO_IMAGE_PATH": "assets/logo.png",
   "manifest_url": "https://www.dropbox.com/scl/fi/w73x8ybc69rw3bvwyzvpi/manifest.json?rlkey=ooy5cwkledbai0zepjtz8akc1&st=hskvzh51&dl=1",
   "files_base_url": "https://www.dropbox.com/scl/fo/pt23mwpp8vp65fyxo2ki7/ANkjB3XDr8Tiu51_LbhsR9A?rlkey=q1u8rw50xhln52f888apb7cis&st=1dj3fzst&dl=1"
 }
