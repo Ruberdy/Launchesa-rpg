@@ -1,0 +1,15 @@
+{
+  "REMOTE_VERSION_URL": "https://www.dropbox.com/scl/fi/vh1gnm7m25iw52i8udt49/version.json?rlkey=8onojxd8g8kj5w98e6rlvdspv&st=kgm7ac5w&dl=1",
+  "REMOTE_ZIP_URL": "https://www.dropbox.com/scl/fi/ce3fqvb7hwdomq1sjbopr/version.zip?rlkey=0rmi8azgp3ymrx0i4i69g8ffd&st=zizzkgfk&dl=1",
+  "REMOTE_NEWS_URL": "https://www.dropbox.com/scl/fi/kf41ztimys1y52xrwb83p/news.txt?rlkey=89v3j20y4sy3rz7xz6u0tq0ng&st=vj811zu2&dl=1",
+  "REMOTE_NOTES_URL": "https://www.dropbox.com/scl/fi/yntqpnyehngdjva8n7lek/version_notes.txt?rlkey=rsqm3q9ayok3owktgjv2wgnv7&st=s7mkh5e4&dl=1",
+  "LOCAL_VERSION_PATH": "version.json",
+  "DISCORD_URL": "https://discord.gg/tuinvitacion",
+  "ZIP_DEST": "update.zip",
+  "GAME_EXECUTABLE": "Game.exe",
+  "GAME_INSTALLER_URL": "https://drive.google.com/file/d/1SMtA-zgF1mkJKMR9-UoVjXqR0Ei4LwnN/view?usp=sharing",
+  "BACKGROUND_IMAGE_PATH": "background.jpg",
+  "LOGO_IMAGE_PATH": "assets/logo.png"
+  "manifest_url": "https://www.dropbox.com/scl/fi/w73x8ybc69rw3bvwyzvpi/manifest.json?rlkey=ooy5cwkledbai0zepjtz8akc1&st=hskvzh51&dl=1",
+  "files_base_url": "https://www.dropbox.com/scl/fo/pt23mwpp8vp65fyxo2ki7/ANkjB3XDr8Tiu51_LbhsR9A?rlkey=q1u8rw50xhln52f888apb7cis&st=1dj3fzst&dl=1"
+}
