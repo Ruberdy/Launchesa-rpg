@@ -10,6 +10,7 @@ import json
 import hashlib
 import random
 import urllib3
+import re
 from packaging import version
 from requests.exceptions import SSLError
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
@@ -50,7 +51,16 @@ def read_config():
     config = dict(DEFAULT_CONFIG)
     try:
         with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-            loaded = json.load(f)
+            raw_text = f.read()
+            try:
+                loaded = json.loads(raw_text)
+            except json.JSONDecodeError:
+                # Reparaciones comunes en JSON editado manualmente
+                sanitized = raw_text
+                sanitized = re.sub(r'""([A-Za-z0-9_]+)"', r'"\1"', sanitized)
+                sanitized = re.sub(r',\s*([}\]])', r'\1', sanitized)
+                loaded = json.loads(sanitized)
+
             if isinstance(loaded, dict):
                 config.update(loaded)
             else:
@@ -126,8 +136,7 @@ class FileVerifier(QThread):
         self.game_root = os.path.abspath(game_root)
 
     def _read_launcher_config(self):
-        with open(self.config_path, 'r', encoding='utf-8') as f:
-            launcher_config = json.load(f)
+        launcher_config = read_config()
 
         manifest_url = launcher_config.get("manifest_url", "").strip()
         files_base_url = launcher_config.get("files_base_url", "").strip()
@@ -266,6 +275,7 @@ class ModernGameLauncher(QMainWindow):
         self.current_version = "0.0.0"
         self.latest_version = "0.0.0"
         self.file_verifier_thread = None
+        self.update_zip_urls = {}
         
         # Configuración de la ventana
         self.setWindowTitle("FosterGames RPG MAKER Launcher")
@@ -1011,6 +1021,7 @@ class ModernGameLauncher(QMainWindow):
             print(f"Datos remotos recibidos: {remote_data}")
             
             # NUEVA LÓGICA: Manejar la estructura con available_versions
+            self.update_zip_urls = {}
             if "available_versions" in remote_data:
                 available_versions = remote_data["available_versions"]
                 if available_versions:
@@ -1024,6 +1035,24 @@ class ModernGameLauncher(QMainWindow):
                     if new_versions:
                         self.available_updates = new_versions
                         self.latest_version = latest_remote_version
+
+                        # Resolver URL ZIP por versión con varios formatos de manifest remoto.
+                        zip_urls_map = remote_data.get("zip_urls", {})
+                        versions_map = remote_data.get("versions", {})
+                        for v in new_versions:
+                            url_for_version = ""
+                            if isinstance(zip_urls_map, dict):
+                                url_for_version = str(zip_urls_map.get(v, "")).strip()
+
+                            if not url_for_version and isinstance(versions_map, dict):
+                                version_info = versions_map.get(v, {})
+                                if isinstance(version_info, dict):
+                                    url_for_version = str(
+                                        version_info.get("zip_url") or version_info.get("url") or ""
+                                    ).strip()
+
+                            self.update_zip_urls[v] = url_for_version
+
                         update_info = f"Versiones disponibles: {', '.join(new_versions)}"
                         self.worker_signals.update_info_ready.emit(update_info)
                         print(f"Actualizaciones disponibles (ordenadas): {new_versions}")
@@ -1113,9 +1142,17 @@ class ModernGameLauncher(QMainWindow):
             for i, version_str in enumerate(sorted_versions):
                 self._update_status(f"Descargando actualización {i+1}/{total_updates}: v{version_str}")
                 
-                # Construir URL específica para esta versión
-                # Asumiendo que las URLs siguen un patrón como: base_url/v{version}.zip
-                version_zip_url = REMOTE_ZIP_URL.replace("version.zip", f"v{version_str}.zip")
+                # Construir URL específica para esta versión (prioriza URL enviada por el servidor)
+                version_zip_url = str(self.update_zip_urls.get(version_str, "")).strip()
+                if not version_zip_url:
+                    if "{version}" in REMOTE_ZIP_URL:
+                        version_zip_url = REMOTE_ZIP_URL.format(version=version_str)
+                    elif "version.zip" in REMOTE_ZIP_URL:
+                        version_zip_url = REMOTE_ZIP_URL.replace("version.zip", f"v{version_str}.zip")
+                    else:
+                        # Fallback: URL fija para una sola actualización
+                        version_zip_url = REMOTE_ZIP_URL
+
                 print(f"Descargando desde: {version_zip_url}")
                 
                 # Descargar archivo ZIP
