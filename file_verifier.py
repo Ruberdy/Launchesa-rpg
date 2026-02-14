@@ -1,0 +1,182 @@
+import hashlib
+import json
+import os
+from pathlib import Path
+from typing import Callable, Dict, List, Optional
+from urllib.parse import quote, urljoin
+
+import requests
+
+
+class FileVerifierError(Exception):
+    """Error de verificación o reparación de archivos."""
+
+
+def calculate_sha256(file_path: Path, chunk_size: int = 1024 * 1024) -> str:
+    sha256_hash = hashlib.sha256()
+    with file_path.open("rb") as file_handler:
+        for chunk in iter(lambda: file_handler.read(chunk_size), b""):
+            sha256_hash.update(chunk)
+    return sha256_hash.hexdigest()
+
+
+def _normalize_manifest(manifest_data) -> List[Dict[str, str]]:
+    if isinstance(manifest_data, dict):
+        if isinstance(manifest_data.get("files"), list):
+            entries = manifest_data["files"]
+        elif isinstance(manifest_data.get("entries"), list):
+            entries = manifest_data["entries"]
+        else:
+            entries = []
+    elif isinstance(manifest_data, list):
+        entries = manifest_data
+    else:
+        entries = []
+
+    normalized = []
+    for item in entries:
+        if not isinstance(item, dict):
+            continue
+
+        path = item.get("path") or item.get("file") or item.get("name")
+        expected_hash = (
+            item.get("sha256")
+            or item.get("hash")
+            or item.get("checksum")
+            or item.get("sha")
+        )
+        file_url = item.get("url")
+
+        if path and expected_hash:
+            normalized.append(
+                {
+                    "path": str(path).replace("\\", "/"),
+                    "sha256": str(expected_hash).lower(),
+                    "url": file_url,
+                }
+            )
+
+    return normalized
+
+
+def _build_file_url(path: str, files_base_url: str, custom_url: Optional[str] = None) -> str:
+    if custom_url:
+        return custom_url
+
+    if not files_base_url:
+        raise FileVerifierError("files_base_url no está configurado.")
+
+    encoded_path = quote(path, safe="/-_.")
+    return urljoin(files_base_url.rstrip("/") + "/", encoded_path)
+
+
+def _download_file(url: str, destination: Path, timeout: int = 60) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temp_destination = destination.with_suffix(destination.suffix + ".tmp")
+
+    response = requests.get(url, stream=True, timeout=timeout)
+    response.raise_for_status()
+
+    with temp_destination.open("wb") as file_handler:
+        for chunk in response.iter_content(chunk_size=1024 * 1024):
+            if chunk:
+                file_handler.write(chunk)
+
+    temp_destination.replace(destination)
+
+
+def verify_and_repair_files(
+    manifest_url: str,
+    files_base_url: str,
+    base_directory: str = ".",
+    status_callback: Optional[Callable[[str], None]] = None,
+    progress_callback: Optional[Callable[[int, int, str], None]] = None,
+) -> Dict[str, object]:
+    if not manifest_url:
+        raise FileVerifierError("manifest_url no está configurado.")
+
+    def emit_status(message: str):
+        if status_callback:
+            status_callback(message)
+
+    def emit_progress(current: int, total: int, detail: str):
+        if progress_callback:
+            progress_callback(current, total, detail)
+
+    emit_status("Descargando manifiesto...")
+    response = requests.get(manifest_url, timeout=20)
+    response.raise_for_status()
+    manifest_data = response.json()
+
+    entries = _normalize_manifest(manifest_data)
+    if not entries:
+        raise FileVerifierError("El manifiesto no contiene entradas válidas de archivos.")
+
+    root = Path(base_directory).resolve()
+    checked = 0
+    downloaded = 0
+    repaired = 0
+    failures = []
+
+    total = len(entries)
+
+    for index, entry in enumerate(entries, start=1):
+        relative_path = entry["path"]
+        expected_hash = entry["sha256"]
+        target_path = (root / relative_path).resolve()
+
+        if root not in target_path.parents and target_path != root:
+            failures.append({"path": relative_path, "error": "Ruta fuera del directorio base"})
+            emit_progress(index, total, f"{relative_path} - ruta inválida")
+            continue
+
+        needs_download = True
+        state = "faltante"
+
+        if target_path.exists() and target_path.is_file():
+            current_hash = calculate_sha256(target_path)
+            if current_hash.lower() == expected_hash:
+                needs_download = False
+                state = "ok"
+            else:
+                state = "corrupto"
+
+        if needs_download:
+            try:
+                file_url = _build_file_url(relative_path, files_base_url, entry.get("url"))
+                emit_status(f"Descargando {relative_path}...")
+                _download_file(file_url, target_path)
+
+                downloaded_hash = calculate_sha256(target_path)
+                if downloaded_hash.lower() != expected_hash:
+                    raise FileVerifierError("Hash SHA256 no coincide después de descargar")
+
+                downloaded += 1
+                if state == "corrupto":
+                    repaired += 1
+                state = "reparado" if state == "corrupto" else "descargado"
+            except Exception as error:
+                failures.append({"path": relative_path, "error": str(error)})
+                state = f"error: {error}"
+
+        checked += 1
+        emit_progress(index, total, f"{relative_path} [{state}]")
+
+    result = {
+        "checked": checked,
+        "total": total,
+        "downloaded": downloaded,
+        "repaired": repaired,
+        "failures": failures,
+    }
+
+    if failures:
+        emit_status(
+            f"Verificación finalizada con errores ({len(failures)}). Descargados: {downloaded}."
+        )
+    else:
+        emit_status(
+            f"Verificación completada. Descargados/Reparados: {downloaded} (corruptos reparados: {repaired})."
+        )
+
+    return result
