@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
                             QListWidget, QListWidgetItem, QLineEdit, QComboBox, QGroupBox)
 from PyQt5.QtCore import Qt, QTimer, QUrl, QSize, QObject, pyqtSignal, QPropertyAnimation, QEasingCurve, QPoint
 from PyQt5.QtGui import QPixmap, QFont, QDesktopServices, QIcon, QColor, QLinearGradient, QPainter, QFontDatabase
+from file_verifier import verify_and_repair_files, FileVerifierError
 
 # Importar módulos existentes
 try:
@@ -65,6 +66,8 @@ BACKGROUND_IMAGE_PATH = config.get("BACKGROUND_IMAGE_PATH", "")
 GAME_INSTALLER_URL = config.get("GAME_INSTALLER_URL", "")
 LOGO_IMAGE_PATH = config.get("LOGO_IMAGE_PATH", "")
 SERVER_STATUS_URL = config.get("SERVER_STATUS_URL", "")
+MANIFEST_URL = config.get("manifest_url", config.get("MANIFEST_URL", ""))
+FILES_BASE_URL = config.get("files_base_url", config.get("FILES_BASE_URL", ""))
 
 class WorkerSignals(QObject):
     update_signal = pyqtSignal(str)
@@ -1291,8 +1294,52 @@ class ModernGameLauncher(QMainWindow):
 
     def verify_files(self):
         """Verificar integridad de archivos"""
+        if not MANIFEST_URL or not FILES_BASE_URL:
+            self._show_error("Configura manifest_url y files_base_url en launcher.json para verificar archivos.")
+            return
+
         self._update_status("Verificando archivos del juego...")
-        QTimer.singleShot(2000, lambda: self._update_status("Verificación completada"))
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setValue(0)
+        self.details_label.setText("Preparando verificación SHA256...")
+
+        threading.Thread(target=self._verify_files_thread, daemon=True).start()
+
+    def _verify_files_thread(self):
+        """Hilo para verificar y reparar archivos usando manifiesto SHA256."""
+        try:
+            def status_callback(message):
+                self.worker_signals.update_signal.emit(message)
+
+            def progress_callback(current, total, detail):
+                percent = int((current / total) * 100) if total > 0 else 0
+                self.worker_signals.progress_signal.emit(percent, "", detail)
+
+            result = verify_and_repair_files(
+                manifest_url=MANIFEST_URL,
+                files_base_url=FILES_BASE_URL,
+                base_directory=os.getcwd(),
+                status_callback=status_callback,
+                progress_callback=progress_callback,
+            )
+
+            failures = result.get("failures", [])
+            resumen = (
+                f"Verificación completada. Revisados: {result.get('checked', 0)}/{result.get('total', 0)} | "
+                f"Descargados/Reparados: {result.get('downloaded', 0)}"
+            )
+
+            if failures:
+                errores = "\n".join(f"- {f['path']}: {f['error']}" for f in failures[:5])
+                self.worker_signals.error_signal.emit(f"{resumen}\nErrores:\n{errores}")
+            else:
+                self.worker_signals.update_signal.emit(resumen)
+                self.worker_signals.progress_signal.emit(100, "", "Todos los archivos están correctos")
+
+        except (requests.RequestException, FileVerifierError) as error:
+            self.worker_signals.error_signal.emit(f"Error durante la verificación: {error}")
+        except Exception as error:
+            self.worker_signals.error_signal.emit(f"Error inesperado durante la verificación: {error}")
 
     def clear_cache(self):
         """Limpiar caché"""
